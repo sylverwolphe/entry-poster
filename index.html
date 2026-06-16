@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rotated Square — Wayfinding Sign Mode</title>
+
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.cdnfonts.com/css/bluu-next" rel="stylesheet">
+
+<style>
+:root {
+  /* Gratified design tokens */
+  --deep-red: #722F37;
+  --bright-orange: #CC5500;
+  --warm-amber: #D2691E;
+  --olive-bronze: #6B5740;
+  --cream: #EDE8E0;
+  --charcoal: #3C3C3C;
+  --golden-sand: #E6C89C;
+
+  --font-price: 'Satoshi', system-ui, sans-serif;
+  --font-name: 'Bluu Next', Georgia, serif;
+  --font-note: 'Satoshi', system-ui, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Satoshi', system-ui;
+  background: var(--charcoal); /* Dark workspace to make the sign pop */
+  display: flex;
+  flex-direction: column;
+}
+
+#ui {
+  flex-shrink: 0;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  background: var(--cream);
+  color: var(--charcoal);
+  border-bottom: 3px solid var(--bright-orange);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  overflow-x: auto;
+}
+
+#ui::before {
+  content: 'Poster Mode';
+  font-family: var(--font-name);
+  font-weight: 700;
+  color: var(--deep-red);
+  letter-spacing: 2px;
+  font-size: 18px;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.input-group label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--olive-bronze);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+input {
+  font-size: 13px;
+  padding: 6px 10px;
+  font-family: inherit;
+  border: 2px solid rgba(114, 47, 55, 0.25);
+  background: rgba(230, 200, 156, 0.15);
+  color: var(--charcoal);
+  outline: none;
+  transition: border-color 0.3s ease;
+  min-width: 140px;
+}
+
+input:focus { border-color: var(--bright-orange); }
+
+input[type="color"] {
+  padding: 2px;
+  width: 36px;
+  height: 30px;
+  min-width: auto;
+  cursor: pointer;
+}
+
+#swatches {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  margin-top: 14px;
+}
+
+.swatch {
+  width: 18px;
+  height: 18px;
+  transform: rotate(45deg);
+  cursor: pointer;
+  border: 2px solid rgba(60,60,60,0.2);
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.swatch:hover {
+  transform: rotate(45deg) scale(1.2);
+  border-color: var(--charcoal);
+}
+
+.swatch.current { border-color: var(--bright-orange); }
+
+.divider {
+  width: 2px;
+  height: 30px;
+  background: rgba(114, 47, 55, 0.15);
+  margin: 0 8px;
+}
+
+button {
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 18px;
+  border: 2px solid var(--deep-red);
+  background: transparent;
+  color: var(--deep-red);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  margin-top: 14px;
+}
+
+button:hover {
+  background: var(--deep-red);
+  color: var(--cream);
+}
+
+button.export-btn {
+  background: var(--bright-orange);
+  border-color: var(--bright-orange);
+  color: #fff;
+}
+
+button.export-btn:hover {
+  background: #A04000;
+  border-color: #A04000;
+}
+
+#wrap {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  overflow: auto;
+}
+
+/* The SVG acts like a physical piece of paper */
+svg {
+  height: 100%;
+  max-height: 90vh;
+  aspect-ratio: 14 / 22;
+  background: var(--deep-red); /* Base color before rects draw */
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  cursor: grab;
+}
+
+svg:active { cursor: grabbing; }
+.item text { pointer-events: none; user-select: none; }
+</style>
+</head>
+
+<body>
+
+<div id="ui">
+  <div class="input-group">
+    <label>Invitation (Tagline)</label>
+    <input id="fTagline" value="coffee and a book. perfect pair." />
+  </div>
+  
+  <div class="input-group">
+    <label>Destination</label>
+    <input id="fLocation" value="LOWER LEVEL" style="font-weight: bold;" />
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="input-group">
+    <label>Diamond Text</label>
+    <input id="fItemName" placeholder="e.g. ESPRESSO" />
+  </div>
+
+  <div id="swatches" title="brand colors"></div>
+  <input type="color" id="fColor" value="#E6C89C" style="margin-top:14px;" />
+  
+  <button onclick="addItem()">Add Diamond</button>
+  <button onclick="del()">Delete</button>
+
+  <div class="divider"></div>
+  <button class="export-btn" onclick="exportSignSVG()">Export 14x22 Sign</button>
+</div>
+
+<div id="wrap">
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1008 1584"></svg>
+</div>
+
+<script>
+/* ---------------------------
+   State & Local Storage (No Firebase needed)
+----------------------------*/
+const STORE_KEY = "gratified-poster-v1";
+
+let state = {
+  tagline: "coffee and a book. perfect pair.",
+  location: "LOWER LEVEL",
+  items: [],
+  selected: null
+};
+
+// Fixed Sign Dimensions
+const PAGE_W = 1008;
+const PAGE_H = 1584;
+
+// Diamond Grid Settings (Anchored to the lower half of the poster)
+const GRID_CX = PAGE_W / 2;
+const GRID_CY = 1150; // Center of the diamond cluster
+const SCALE = 120; // Size of diamonds
+const U = SCALE * 0.5; // Grid half-step
+
+function save() {
+  const data = { tagline: state.tagline, location: state.location, items: state.items };
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      state.tagline = data.tagline || state.tagline;
+      state.location = data.location || state.location;
+      state.items = data.items || [];
+      
+      document.getElementById('fTagline').value = state.tagline;
+      document.getElementById('fLocation').value = state.location;
+    }
+  } catch(e) {}
+}
+
+/* ---------------------------
+   Color & Utility Functions
+----------------------------*/
+const SIGN_BG = "#722F37";
+const SIGN_PARCHMENT = "#EDE8E0";
+const SIGN_GOLD = "#E6C89C";
+const SIGN_AMBER = "#D2691E";
+
+function hexToRgb(hex){
+  const c = String(hex || "").replace("#","");
+  return { r: parseInt(c.slice(0,2),16)||0, g: parseInt(c.slice(2,4),16)||0, b: parseInt(c.slice(4,6),16)||0 };
+}
+function rgbToHsl(r,g,b){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h,s,l=(max+min)/2;
+  if(max===min){ h=s=0; }
+  else{
+    const d=max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    if(max===r) h=((g-b)/d + (g<b?6:0));
+    else if(max===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h/=6;
+  }
+  return {h,s,l};
+}
+function hslToRgb(h,s,l){
+  let r,g,b;
+  if(s===0){ r=g=b=l; }
+  else{
+    const hue2rgb=(p,q,t)=>{
+      if(t<0) t+=1; if(t>1) t-=1;
+      if(t<1/6) return p+(q-p)*6*t;
+      if(t<1/2) return q;
+      if(t<2/3) return p+(q-p)*(2/3-t)*6;
+      return p;
+    };
+    const q = l<0.5 ? l*(1+s) : l+s-l*s;
+    const p = 2*l-q;
+    r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);
+  }
+  return { r:Math.round(r*255), g:Math.round(g*255), b:Math.round(b*255) };
+}
+function toHex2(n){ return Math.max(0,Math.min(255,n)).toString(16).padStart(2,"0"); }
+
+function deepenColor(hex, maxL = 0.30){
+  const {r,g,b} = hexToRgb(hex);
+  let {h,s,l} = rgbToHsl(r,g,b);
+  if(l > maxL) l = maxL;
+  s = Math.min(1, s*1.15);
+  const out = hslToRgb(h,s,l);
+  return "#" + toHex2(out.r) + toHex2(out.g) + toHex2(out.b);
+}
+
+function esc(str){
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* ---------------------------
+   Coordinate Mapping
+----------------------------*/
+function toScreen(gx, gy) {
+  return { x: GRID_CX + gx * U, y: GRID_CY + gy * U };
+}
+
+function toGrid(x, y) {
+  return {
+    gx: Math.round((x - GRID_CX) / U),
+    gy: Math.round((y - GRID_CY) / U)
+  };
+}
+
+const svg = document.getElementById("svg");
+
+// Robust mapping from screen mouse to SVG viewBox coordinates
+function svgPoint(e) {
+  const pt = svg.createSVGPoint();
+  pt.x = e.clientX;
+  pt.y = e.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+function isLatticeCentre(gx, gy){
+  return gx % 2 === 0 && gy % 2 === 0 && ((gx + gy) / 2) % 2 === 0;
+}
+
+/* ---------------------------
+   Rendering Elements
+----------------------------*/
+function logoDiamond(cx, cy, D, color) {
+  const inset = D * 0.15;
+  const rs = D * 0.7;
+  const left = cx - D/2, top = cy - D/2;
+  const sw = Math.max(2, D * 0.03);
+  return `
+    <g transform="translate(${left},${top})">
+      <rect x="${inset}" y="${inset}" width="${rs}" height="${rs}" transform="rotate(45 ${D/2} ${D/2})" fill="${color}"/>
+      <rect x="${inset}" y="${inset}" width="${rs}" height="${rs}" transform="rotate(45 ${D/2} ${D/2})" fill="none" stroke="${color}" stroke-width="${sw}"/>
+    </g>
+  `;
+}
+
+function architecturalArrow(cx, cy, length, color) {
+  const headSize = 40;
+  return `
+    <g stroke="${color}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <line x1="${cx}" y1="${cy - length/2}" x2="${cx}" y2="${cy + length/2}" />
+      <polyline points="${cx - headSize},${cy + length/2 - headSize} ${cx},${cy + length/2} ${cx + headSize},${cy + length/2 - headSize}" />
+    </g>
+  `;
+}
+
+function diamondItem(x, y, s, fill, stroke, isSel) {
+  const highlight = isSel ? `stroke="#CC5500" stroke-width="6"` : `stroke="${stroke}" stroke-width="3"`;
+  return `
+    <polygon
+      points="${x},${y-s} ${x+s},${y} ${x},${y+s} ${x-s},${y}"
+      fill="${fill}"
+      ${highlight}
+      stroke-linejoin="round"
+    />
+  `;
+}
+
+function renderItem(it) {
+  const p = toScreen(it.gx, it.gy);
+  const isSel = state.selected === it;
+  const textColor = deepenColor(it.color);
+  
+  let textNode = "";
+  if (it.name) {
+    textNode = `<text x="${p.x}" y="${p.y + 12}" text-anchor="middle" font-size="34" font-weight="700" fill="${textColor}" font-family="var(--font-name)">${esc(it.name)}</text>`;
+  }
+
+  return `
+    <g class="item" data-id="${it.id}">
+      ${diamondItem(p.x, p.y, SCALE, SIGN_PARCHMENT, SIGN_AMBER, isSel)}
+      ${textNode}
+    </g>
+  `;
+}
+
+/* ---------------------------
+   Main Render Loop
+   Builds the exact WYSIWYG SVG payload
+----------------------------*/
+function generateSVGContent() {
+  const cx = PAGE_W / 2;
+  
+  let out = `
+    <defs>
+      <radialGradient id="signGlow" cx="50%" cy="14%" r="55%">
+        <stop offset="0%" stop-color="${SIGN_AMBER}" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="${SIGN_AMBER}" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="signVignette" cx="50%" cy="50%" r="75%">
+        <stop offset="60%" stop-color="#000000" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0.25"/>
+      </radialGradient>
+    </defs>
+
+    <rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="${SIGN_BG}"/>
+    <rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="url(#signGlow)"/>
+    <rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="url(#signVignette)"/>
+    
+    <rect x="50" y="50" width="${PAGE_W-100}" height="${PAGE_H-100}" fill="none" stroke="${SIGN_AMBER}" stroke-width="2" opacity="0.6"/>
+  `;
+
+  // 1. Identity Layer
+  out += `
+    <text x="${cx}" y="200" text-anchor="middle" font-size="110" font-weight="700" fill="${SIGN_PARCHMENT}" font-family="var(--font-name)" letter-spacing="8">Gratified</text>
+    <text x="${cx}" y="270" text-anchor="middle" font-size="44" font-weight="700" fill="${SIGN_PARCHMENT}" font-family="var(--font-name)" letter-spacing="3" style="word-spacing:8px">coffee + art</text>
+  `;
+  out += logoDiamond(cx, 360, 90, SIGN_PARCHMENT);
+
+  // 2. Invitation Layer (Tagline)
+  if (state.tagline) {
+    out += `
+      <text x="${cx}" y="480" text-anchor="middle" font-size="38" font-weight="500" font-style="italic" fill="${SIGN_GOLD}" opacity="0.9" font-family="var(--font-price)" letter-spacing="1.5">${esc(state.tagline)}</text>
+    `;
+  }
+
+  // 3. Wayfinding Layer (Arrow + Location)
+  out += architecturalArrow(cx, 620, 140, SIGN_GOLD);
+  
+  if (state.location) {
+    out += `
+      <text x="${cx}" y="820" text-anchor="middle" font-size="95" font-weight="900" fill="${SIGN_PARCHMENT}" font-family="var(--font-price)" letter-spacing="4">${esc(state.location)}</text>
+      <line x1="${cx-160}" y1="870" x2="${cx+160}" y2="870" stroke="${SIGN_AMBER}" stroke-width="3" opacity="0.8"/>
+    `;
+  }
+
+  // 4. Diamond Lattice Grid (whisper faint background guides)
+  for(let gx=-8; gx<=8; gx++) {
+    for(let gy=-6; gy<=8; gy++) {
+      if(isLatticeCentre(gx,gy)) {
+        const p = toScreen(gx,gy);
+        out += `<polygon points="${p.x},${p.y-SCALE} ${p.x+SCALE},${p.y} ${p.x},${p.y+SCALE} ${p.x-SCALE},${p.y}" fill="none" stroke="${SIGN_PARCHMENT}" stroke-opacity="0.04" stroke-width="1.5" />`;
+      }
+    }
+  }
+
+  // 5. Items
+  for(const it of state.items) {
+    out += renderItem(it);
+  }
+
+  return out;
+}
+
+function render() {
+  svg.innerHTML = generateSVGContent();
+}
+
+/* ---------------------------
+   Interaction & Editing
+----------------------------*/
+let draggingItem = null;
+let dragOffset = {x:0, y:0};
+
+const fTagline = document.getElementById("fTagline");
+const fLocation = document.getElementById("fLocation");
+const fItemName = document.getElementById("fItemName");
+const fColor = document.getElementById("fColor");
+
+// Top-level poster inputs
+fTagline.addEventListener("input", () => { state.tagline = fTagline.value; render(); save(); });
+fLocation.addEventListener("input", () => { state.location = fLocation.value; render(); save(); });
+
+// Diamond specific inputs
+fItemName.addEventListener("input", () => {
+  if(!state.selected) return;
+  state.selected.name = fItemName.value;
+  render(); save();
+});
+
+svg.addEventListener("mousedown", (e) => {
+  const pt = svgPoint(e);
+  
+  // Find clicked item manually to avoid closest() issues in raw SVGs
+  let clicked = null;
+  for (let i = state.items.length - 1; i >= 0; i--) {
+    const it = state.items[i];
+    const p = toScreen(it.gx, it.gy);
+    // Simple diamond hit test (manhattan distance)
+    if (Math.abs(pt.x - p.x) + Math.abs(pt.y - p.y) <= SCALE) {
+      clicked = it;
+      break;
+    }
+  }
+
+  if (clicked) {
+    state.selected = clicked;
+    draggingItem = clicked;
+    const p = toScreen(clicked.gx, clicked.gy);
+    dragOffset = { x: p.x - pt.x, y: p.y - pt.y };
+    fItemName.value = clicked.name;
+    fColor.value = clicked.color;
+  } else {
+    state.selected = null;
+    fItemName.value = "";
+  }
+  render();
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (draggingItem) {
+    const pt = svgPoint(e);
+    const g = toGrid(pt.x + dragOffset.x, pt.y + dragOffset.y);
+    if (g.gx !== draggingItem.gx || g.gy !== draggingItem.gy) {
+      draggingItem.gx = g.gx;
+      draggingItem.gy = g.gy;
+      render();
+    }
+  }
+});
+
+window.addEventListener("mouseup", () => {
+  if (draggingItem) save();
+  draggingItem = null;
+});
+
+/* ---------------------------
+   Brand color swatches
+----------------------------*/
+const BRAND_COLORS = [
+  { name:"golden sand",   hex:"#E6C89C" },
+  { name:"bright orange", hex:"#CC5500" },
+  { name:"warm amber",    hex:"#D2691E" },
+  { name:"olive bronze",  hex:"#6B5740" }
+];
+const swatchBox = document.getElementById("swatches");
+for(const c of BRAND_COLORS){
+  const el = document.createElement("div");
+  el.className = "swatch";
+  el.style.background = c.hex;
+  el.title = c.name;
+  el.addEventListener("click", ()=>{
+    fColor.value = c.hex;
+    if(state.selected){
+      state.selected.color = c.hex;
+      render(); save();
+    }
+  });
+  swatchBox.appendChild(el);
+}
+
+/* ---------------------------
+   Item Actions
+----------------------------*/
+function addItem(){
+  const it = {
+    id: crypto.randomUUID(),
+    gx: 0, gy: 0, // Drop in the center of the grid zone
+    name: fItemName.value || "",
+    color: fColor.value
+  };
+  state.items.push(it);
+  state.selected = it;
+  render(); save();
+}
+
+function del(){
+  if(!state.selected) return;
+  state.items = state.items.filter(x => x !== state.selected);
+  state.selected = null;
+  fItemName.value = "";
+  render(); save();
+}
+
+/* ---------------------------
+   Export
+----------------------------*/
+function exportSignSVG() {
+  // Clear selection ring before export
+  const oldSel = state.selected;
+  state.selected = null;
+  render();
+  
+  const finalSvg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PAGE_W} ${PAGE_H}" width="14in" height="22in">
+      <style>
+        @import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,500,700,900&amp;display=swap');
+        @import url('https://fonts.cdnfonts.com/css/bluu-next');
+      </style>
+      ${generateSVGContent()}
+    </svg>
+  `;
+  
+  const blob = new Blob([finalSvg], {type: "image/svg+xml"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "gratified-wayfinding-sign.svg";
+  a.click();
+  
+  // Restore selection
+  state.selected = oldSel;
+  render();
+}
+
+// Init
+load();
+render();
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(render);
+}
+</script>
+</body>
+</html>
