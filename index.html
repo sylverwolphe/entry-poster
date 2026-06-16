@@ -1,9 +1,16 @@
+Here is the fully assembled, complete `index.html` file with all of your design refinements compiled into it.
+
+The gradients have been stripped out for that clean, solid architectural background, the arrow has been upgraded to the elegant stemmed version to match the typography, and all diamonds now feature that widespread, pleasant interior fine-line border.
+
+Save this entire block as your `index.html` file:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Rotated Square — Wayfinding Sign Mode</title>
+<title>Gratified — Poster Builder</title>
 
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,500,700,900&display=swap" rel="stylesheet">
 <link href="https://fonts.cdnfonts.com/css/bluu-next" rel="stylesheet">
@@ -173,7 +180,7 @@ svg {
   height: 100%;
   max-height: 90vh;
   aspect-ratio: 14 / 22;
-  background: var(--deep-red); /* Base color before rects draw */
+  background: var(--deep-red); 
   box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   cursor: grab;
 }
@@ -219,7 +226,7 @@ svg:active { cursor: grabbing; }
 
 <script>
 /* ---------------------------
-   State & Local Storage (No Firebase needed)
+   State & Local Storage 
 ----------------------------*/
 const STORE_KEY = "gratified-poster-v1";
 
@@ -335,7 +342,6 @@ function toGrid(x, y) {
 
 const svg = document.getElementById("svg");
 
-// Robust mapping from screen mouse to SVG viewBox coordinates
 function svgPoint(e) {
   const pt = svg.createSVGPoint();
   pt.x = e.clientX;
@@ -363,23 +369,36 @@ function logoDiamond(cx, cy, D, color) {
   `;
 }
 
-function architecturalArrow(cx, cy, length, color) {
-  const headSize = 40;
+function downChevron(cx, cy, w, color){
+  const hw = w / 2;
+  const h = w * 0.45;
+  const stemH = w * 1.4; // Adds a nice vertical stem to the arrow
   return `
-    <g stroke="${color}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none">
-      <line x1="${cx}" y1="${cy - length/2}" x2="${cx}" y2="${cy + length/2}" />
-      <polyline points="${cx - headSize},${cy + length/2 - headSize} ${cx},${cy + length/2} ${cx + headSize},${cy + length/2 - headSize}" />
+    <g fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="${cx}" y1="${cy - stemH/2}" x2="${cx}" y2="${cy + stemH/2}" />
+      <polyline points="${cx-hw},${cy+stemH/2-h} ${cx},${cy+stemH/2} ${cx+hw},${cy+stemH/2-h}" />
     </g>
   `;
 }
 
 function diamondItem(x, y, s, fill, stroke, isSel) {
-  const highlight = isSel ? `stroke="#CC5500" stroke-width="6"` : `stroke="${stroke}" stroke-width="3"`;
+  const insetS = s * 0.88; 
+  const highlight = isSel ? `stroke="#CC5500" stroke-width="4"` : `stroke="${stroke}" stroke-width="1.2"`;
+  
   return `
     <polygon
       points="${x},${y-s} ${x+s},${y} ${x},${y+s} ${x-s},${y}"
       fill="${fill}"
       ${highlight}
+      stroke-opacity="0.85"
+      stroke-linejoin="round"
+    />
+    <polygon
+      points="${x},${y-insetS} ${x+insetS},${y} ${x},${y+insetS} ${x-insetS},${y}"
+      fill="none"
+      stroke="${stroke}"
+      stroke-width="0.6"
+      stroke-opacity="0.4"
       stroke-linejoin="round"
     />
   `;
@@ -411,22 +430,9 @@ function generateSVGContent() {
   const cx = PAGE_W / 2;
   
   let out = `
-    <defs>
-      <radialGradient id="signGlow" cx="50%" cy="14%" r="55%">
-        <stop offset="0%" stop-color="${SIGN_AMBER}" stop-opacity="0.25"/>
-        <stop offset="100%" stop-color="${SIGN_AMBER}" stop-opacity="0"/>
-      </radialGradient>
-      <radialGradient id="signVignette" cx="50%" cy="50%" r="75%">
-        <stop offset="60%" stop-color="#000000" stop-opacity="0"/>
-        <stop offset="100%" stop-color="#000000" stop-opacity="0.25"/>
-      </radialGradient>
-    </defs>
-
     <rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="${SIGN_BG}"/>
-    <rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="url(#signGlow)"/>
-    <rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}" fill="url(#signVignette)"/>
     
-    <rect x="50" y="50" width="${PAGE_W-100}" height="${PAGE_H-100}" fill="none" stroke="${SIGN_AMBER}" stroke-width="2" opacity="0.6"/>
+    <rect x="40" y="40" width="${PAGE_W-80}" height="${PAGE_H-80}" fill="none" stroke="${SIGN_AMBER}" stroke-width="1.5" opacity="0.55"/>
   `;
 
   // 1. Identity Layer
@@ -444,7 +450,7 @@ function generateSVGContent() {
   }
 
   // 3. Wayfinding Layer (Arrow + Location)
-  out += architecturalArrow(cx, 620, 140, SIGN_GOLD);
+  out += downChevron(cx, 630, 90, SIGN_GOLD);
   
   if (state.location) {
     out += `
@@ -500,12 +506,10 @@ fItemName.addEventListener("input", () => {
 svg.addEventListener("mousedown", (e) => {
   const pt = svgPoint(e);
   
-  // Find clicked item manually to avoid closest() issues in raw SVGs
   let clicked = null;
   for (let i = state.items.length - 1; i >= 0; i--) {
     const it = state.items[i];
     const p = toScreen(it.gx, it.gy);
-    // Simple diamond hit test (manhattan distance)
     if (Math.abs(pt.x - p.x) + Math.abs(pt.y - p.y) <= SCALE) {
       clicked = it;
       break;
@@ -574,7 +578,7 @@ for(const c of BRAND_COLORS){
 function addItem(){
   const it = {
     id: crypto.randomUUID(),
-    gx: 0, gy: 0, // Drop in the center of the grid zone
+    gx: 0, gy: 0, 
     name: fItemName.value || "",
     color: fColor.value
   };
@@ -595,7 +599,6 @@ function del(){
    Export
 ----------------------------*/
 function exportSignSVG() {
-  // Clear selection ring before export
   const oldSel = state.selected;
   state.selected = null;
   render();
@@ -616,7 +619,6 @@ function exportSignSVG() {
   a.download = "gratified-wayfinding-sign.svg";
   a.click();
   
-  // Restore selection
   state.selected = oldSel;
   render();
 }
@@ -630,3 +632,5 @@ if(document.fonts && document.fonts.ready){
 </script>
 </body>
 </html>
+
+```
